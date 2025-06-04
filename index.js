@@ -11,22 +11,25 @@ app.post('/meesho-login', async (req, res) => {
 
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
   const page = await browser.newPage();
   try {
     await page.goto('https://supplier.meesho.com/panel/v3/new/root/login', { waitUntil: 'networkidle2' });
 
-    await page.type('input[type="email"]', username);
+    // Use the updated selector for email/phone
+    await page.waitForSelector('input[name="emailOrPhone"]', { timeout: 5000 });
+    await page.type('input[name="emailOrPhone"]', username);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
 
+    // Wait and use updated selector for password field
+    await page.waitForSelector('input[type="password"]', { timeout: 5000 });
     await page.type('input[type="password"]', password);
     await page.click('button[type="submit"]');
 
     await page.waitForTimeout(3000);
-    res.json({ status: 'success' });
+    res.json({ status: 'success', message: 'Login attempted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   } finally {
@@ -34,6 +37,5 @@ app.post('/meesho-login', async (req, res) => {
   }
 });
 
-// ✅ Use 0.0.0.0 for Fly.io
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
